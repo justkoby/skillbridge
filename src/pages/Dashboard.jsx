@@ -61,8 +61,8 @@ const mentors = [
 ];
 
 // ── DashboardHome ────────────────────────────────────────────────────────────
-const DashboardHome = ({ user, analysisData, showResults, isParsing, parsingStep, steps, handleFileUpload }) => {
-  const [checklist, setChecklist] = useState(initialChecklist);
+const DashboardHome = ({ user, analysisData, showResults, isParsing, parsingStep, steps, handleFileUpload, dashboardMode, demoProfile }) => {
+  const [checklist, setChecklist] = useState(dashboardMode === 'personalized' ? initialChecklist.map(c => ({...c, done: false})) : initialChecklist);
   const done = checklist.filter(c => c.done).length;
 
   const toggleCheck = (i) => {
@@ -75,34 +75,39 @@ const DashboardHome = ({ user, analysisData, showResults, isParsing, parsingStep
       <motion.div className="welcome-card" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="welcome-text">
           <h2>{getGreeting()}, {user?.name?.split(' ')[0] || 'Kwame'} 👋</h2>
-          <p className="muted">You're <strong style={{ color: 'var(--brand)' }}>{overallReadiness}% career-ready</strong>. Complete your profile to boost your score and unlock more opportunities.</p>
+          {dashboardMode === 'personalized' ? (
+            <p className="muted">Welcome to your new dashboard! Upload your CV below to generate your <strong style={{ color: 'var(--brand)' }}>Career Readiness Score</strong> and uncover matching opportunities.</p>
+          ) : (
+            <p className="muted">You're <strong style={{ color: 'var(--brand)' }}>{overallReadiness}% career-ready</strong> as an {demoProfile || 'Aspiring Professional'}. Complete your profile to boost your score and unlock more opportunities.</p>
+          )}
         </div>
         <div className="career-readiness-ring">
           <svg viewBox="0 0 80 80" width="80" height="80">
             <circle cx="40" cy="40" r="32" fill="none" stroke="var(--border)" strokeWidth="6" />
             <motion.circle cx="40" cy="40" r="32" fill="none" stroke="var(--brand)" strokeWidth="6"
-              strokeDasharray={`${2 * Math.PI * 32 * (overallReadiness / 100)} ${2 * Math.PI * 32}`}
+              strokeDasharray={`${2 * Math.PI * 32 * (dashboardMode === 'personalized' ? 0 : (overallReadiness / 100))} ${2 * Math.PI * 32}`}
               strokeLinecap="round" transform="rotate(-90 40 40)"
               initial={{ strokeDasharray: `0 ${2 * Math.PI * 32}` }}
-              animate={{ strokeDasharray: `${2 * Math.PI * 32 * (overallReadiness / 100)} ${2 * Math.PI * 32}` }}
+              animate={{ strokeDasharray: `${2 * Math.PI * 32 * (dashboardMode === 'personalized' ? 0 : (overallReadiness / 100))} ${2 * Math.PI * 32}` }}
               transition={{ duration: 1.2, ease: 'easeOut' }}
             />
           </svg>
-          <div className="ring-label">{overallReadiness}%<span>ready</span></div>
+          <div className="ring-label">{dashboardMode === 'personalized' ? '0%' : `${overallReadiness}%`}<span>ready</span></div>
         </div>
       </motion.div>
 
       {/* Stats Row */}
       <div className="stats-row" style={{ marginBottom: '28px' }}>
         {[
-          { icon: <FileText size={20}/>, label: 'CV Strength', value: '85%', trend: 'Uploaded', color: 'var(--brand)' },
-          { icon: <TrendingUp size={20}/>, label: 'Career Matches', value: '6', trend: 'This week', color: '#4F7CFF' },
-          { icon: <Award size={20}/>, label: 'Skills Detected', value: '18', trend: 'From your CV', color: '#F4A900' },
-          { icon: <Zap size={20}/>, label: 'Interview Readiness', value: '65%', trend: 'Improving', color: '#8B5CF6' },
+          { icon: <FileText size={20}/>, label: 'CV Strength', value: dashboardMode === 'personalized' ? '--' : '85%', trend: dashboardMode === 'personalized' ? 'Pending' : 'Uploaded', color: 'var(--brand)' },
+          { icon: <TrendingUp size={20}/>, label: 'Career Matches', value: dashboardMode === 'personalized' ? '0' : '6', trend: dashboardMode === 'personalized' ? 'Waiting for data' : 'This week', color: '#4F7CFF' },
+          { icon: <Award size={20}/>, label: 'Skills Detected', value: dashboardMode === 'personalized' ? '0' : '18', trend: dashboardMode === 'personalized' ? 'From your CV' : 'From your CV', color: '#F4A900' },
+          { icon: <Zap size={20}/>, label: 'Interview Readiness', value: dashboardMode === 'personalized' ? '--' : '65%', trend: dashboardMode === 'personalized' ? 'Not started' : 'Improving', color: '#8B5CF6' },
         ].map((s, i) => (
           <motion.div key={s.label} className="stat-card-dash"
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-            whileHover={{ y: -4 }}>
+            whileHover={{ y: -4 }}
+            style={{ opacity: dashboardMode === 'personalized' ? 0.6 : 1 }}>
             <div className="stat-icon" style={{ background: `${s.color}15`, color: s.color }}>{s.icon}</div>
             <div className="stat-val">{s.value}</div>
             <div className="stat-lbl">{s.label}</div>
@@ -117,28 +122,37 @@ const DashboardHome = ({ user, analysisData, showResults, isParsing, parsingStep
         <div className="glass-card" style={{ padding: '24px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <h4 style={{ margin: 0 }}>Career Readiness</h4>
-            <div style={{ fontWeight: '800', color: 'var(--brand)', fontSize: '1.4rem' }}>{overallReadiness}%</div>
+            <div style={{ fontWeight: '800', color: 'var(--brand)', fontSize: '1.4rem' }}>{dashboardMode === 'personalized' ? '0' : overallReadiness}%</div>
           </div>
-          {readinessBreakdown.map((item, i) => (
-            <div key={item.label} style={{ marginBottom: '14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem' }}>
-                  <span>{item.icon}</span><span style={{ fontWeight: '500' }}>{item.label}</span>
-                </div>
-                <span style={{ fontWeight: '700', fontSize: '0.85rem', color: item.score >= 70 ? 'var(--brand)' : item.score >= 50 ? '#F4A900' : '#ef4444' }}>{item.score}%</span>
-              </div>
-              <div className="bar-track" style={{ height: '5px' }}>
-                <motion.div className="bar-fill"
-                  initial={{ width: 0 }} animate={{ width: `${item.score}%` }}
-                  transition={{ duration: 0.8, delay: i * 0.1 }}
-                  style={{ background: item.score >= 70 ? 'var(--brand)' : item.score >= 50 ? '#F4A900' : '#ef4444' }}
-                />
-              </div>
+          {dashboardMode === 'personalized' ? (
+            <div className="text-center" style={{ padding: '20px 0', opacity: 0.6 }}>
+              <Zap size={32} style={{ margin: '0 auto 12px' }} />
+              <p>Upload your CV below to generate your personalized career readiness breakdown.</p>
             </div>
-          ))}
-          <p style={{ margin: '16px 0 0', fontSize: '0.82rem', color: 'var(--muted)', fontStyle: 'italic' }}>
-            💡 Add portfolio projects (+20%) and certifications (+15%) to boost your score.
-          </p>
+          ) : (
+            <>
+              {readinessBreakdown.map((item, i) => (
+                <div key={item.label} style={{ marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem' }}>
+                      <span>{item.icon}</span><span style={{ fontWeight: '500' }}>{item.label}</span>
+                    </div>
+                    <span style={{ fontWeight: '700', fontSize: '0.85rem', color: item.score >= 70 ? 'var(--brand)' : item.score >= 50 ? '#F4A900' : '#ef4444' }}>{item.score}%</span>
+                  </div>
+                  <div className="bar-track" style={{ height: '5px' }}>
+                    <motion.div className="bar-fill"
+                      initial={{ width: 0 }} animate={{ width: `${item.score}%` }}
+                      transition={{ duration: 0.8, delay: i * 0.1 }}
+                      style={{ background: item.score >= 70 ? 'var(--brand)' : item.score >= 50 ? '#F4A900' : '#ef4444' }}
+                    />
+                  </div>
+                </div>
+              ))}
+              <p style={{ margin: '16px 0 0', fontSize: '0.82rem', color: 'var(--muted)', fontStyle: 'italic' }}>
+                💡 Add portfolio projects (+20%) and certifications (+15%) to boost your score.
+              </p>
+            </>
+          )}
         </div>
 
         {/* Internship Readiness Checklist */}
@@ -259,14 +273,22 @@ const DashboardHome = ({ user, analysisData, showResults, isParsing, parsingStep
           <div className="glass-card" style={{ padding: '24px' }}>
             <h4 style={{ marginBottom: '4px' }}>Your Strength Areas</h4>
             <p className="muted" style={{ fontSize: '0.82rem', marginBottom: '16px' }}>What makes you stand out</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {['Communication', 'Teamwork', 'Excel', 'User Research', 'Adaptability', 'Figma'].map(s => (
-                <span key={s} className="strength-chip">{s}</span>
-              ))}
-            </div>
-            <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(46,158,77,0.05)', borderRadius: '10px', fontSize: '0.82rem', color: 'var(--muted)', lineHeight: '1.5' }}>
-              💼 <strong>Employer feedback:</strong> Employers value your communication skills. Adding more project experience could improve your match rate.
-            </div>
+            {dashboardMode === 'personalized' ? (
+              <div className="text-center" style={{ padding: '20px 0', opacity: 0.6 }}>
+                <p>Upload your CV to identify your core strengths.</p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {['Communication', 'Teamwork', 'Excel', 'User Research', 'Adaptability', 'Figma'].map(s => (
+                    <span key={s} className="strength-chip">{s}</span>
+                  ))}
+                </div>
+                <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(46,158,77,0.05)', borderRadius: '10px', fontSize: '0.82rem', color: 'var(--muted)', lineHeight: '1.5' }}>
+                  💼 <strong>Employer feedback:</strong> Employers value your communication skills. Adding more project experience could improve your match rate.
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -362,7 +384,7 @@ const OpportunitiesPanel = () => (
 
 // ── Main Dashboard ───────────────────────────────────────────────────────────
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, dashboardMode, demoProfile } = useAuth();
   const [activePage, setActivePage] = useState('dashboard');
   const [isParsing, setIsParsing] = useState(false);
   const [parsingStep, setParsingStep] = useState(0);
@@ -406,7 +428,7 @@ const Dashboard = () => {
 
   const renderPanel = () => {
     switch (activePage) {
-      case 'dashboard': return <DashboardHome user={user} analysisData={analysisData} showResults={showResults} isParsing={isParsing} parsingStep={parsingStep} steps={steps} handleFileUpload={handleFileUpload} />;
+      case 'dashboard': return <DashboardHome user={user} analysisData={analysisData} showResults={showResults} isParsing={isParsing} parsingStep={parsingStep} steps={steps} handleFileUpload={handleFileUpload} dashboardMode={dashboardMode} demoProfile={demoProfile} />;
       case 'skills': return <SkillsPanel />;
       case 'matches': return <CareerMatchesPanel />;
       case 'learning': return <LearningPathsPanel />;
@@ -417,7 +439,7 @@ const Dashboard = () => {
       case 'chatbot': return <AskSkillBridgePage />;
       case 'opportunities': return <OpportunitiesPanel />;
       case 'settings': return <SettingsPanel />;
-      default: return <DashboardHome user={user} />;
+      default: return <DashboardHome user={user} analysisData={analysisData} showResults={showResults} isParsing={isParsing} parsingStep={parsingStep} steps={steps} handleFileUpload={handleFileUpload} dashboardMode={dashboardMode} demoProfile={demoProfile} />;
     }
   };
 

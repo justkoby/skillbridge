@@ -5,6 +5,9 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [dashboardMode, setDashboardMode] = useState('demo'); // 'demo' | 'personalized'
+  const [demoProfile, setDemoProfile] = useState(null);
 
   useEffect(() => {
     // Mock persistent login
@@ -20,6 +23,7 @@ export const AuthProvider = ({ children }) => {
     if (email === 'admin@skillbridge.gh' && password === 'admin123') {
       const adminUser = { id: 'admin', name: 'Admin', email, role: 'employer' };
       setUser(adminUser);
+      setHasCompletedOnboarding(true); // Admins skip onboarding
       localStorage.setItem('skillbridge_user', JSON.stringify(adminUser));
       return { success: true };
     }
@@ -32,6 +36,8 @@ export const AuthProvider = ({ children }) => {
         role: 'jobseeker'
       };
       setUser(mockUser);
+      setHasCompletedOnboarding(false);
+      setDashboardMode('personalized');
       localStorage.setItem('skillbridge_user', JSON.stringify(mockUser));
       return { success: true };
     }
@@ -47,6 +53,8 @@ export const AuthProvider = ({ children }) => {
       role: role
     };
     setUser(mockUser);
+    setHasCompletedOnboarding(false);
+    setDashboardMode('personalized');
     localStorage.setItem('skillbridge_user', JSON.stringify(mockUser));
     return { success: true };
   };
@@ -56,8 +64,17 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('skillbridge_user');
   };
 
+  const completeOnboarding = (mode, profile = null) => {
+    setDashboardMode(mode);
+    setDemoProfile(profile);
+    setHasCompletedOnboarding(true);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ 
+      user, loading, login, signup, logout,
+      hasCompletedOnboarding, dashboardMode, demoProfile, completeOnboarding
+    }}>
       {!loading && children}
     </AuthContext.Provider>
   );

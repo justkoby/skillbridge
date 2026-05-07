@@ -26,7 +26,7 @@ const SignupPage = () => {
     }
     const result = signup(formData.fullname, formData.email, formData.password, formData.role);
     if (result.success) {
-      navigate('/dashboard');
+      navigate('/onboarding');
     }
   };
 
